@@ -1,0 +1,7 @@
+biopython~=1.79
+matplotlib~=3.7.1
+numpy~=1.26.4
+pysam~=0.22.1
+tqdm>=4.66.3
+scipy>=1.11.4
+setuptools~=70.0.0

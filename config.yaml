@@ -1,0 +1,10 @@
+output: testing
+name: my_test_reads
+rng: 1
+threads: 4
+rtp: TTTTTTTNNNNNNAGAGAGAG
+random: 500
+clonal: true
+ncdna: 100
+fp: AGAGAGAGTCTCTCTC
+reads: 1000
