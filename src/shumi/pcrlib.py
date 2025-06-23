@@ -1,3 +1,8 @@
+#  Copyright (c) 2025 National Institutes of Health
+#  Written by Pierce Radecki
+#  This program comes with ABSOLUTELY NO WARRANTY; it is intended for
+#  Research Use Only and not for use in diagnostic procedures.
+
 from dataclasses import dataclass
 from typing import List, Dict, Tuple
 from collections import defaultdict
@@ -60,16 +65,19 @@ class PCRSimulator:
         self.max_threads = max_threads
         self.seed = seed
 
-        self.current_pool = {f'{DNA_id}_': DNAMolecule(parent_id=DNA_id,
-                                                       molecule_id=f'{DNA_id}_',
-                                                       mutation_history=tuple(),
-                                                       cycle_created=0,
-                                                       times_copied=0,
-                                                       gap_bases=get_gaps(loaded_molecules[DNA_id])) for DNA_id in loaded_molecules.keys()}
+        self.current_pool = {
+            f'{DNA_id}_':
+                DNAMolecule(parent_id=DNA_id,
+                            molecule_id=f'{DNA_id}_',
+                            mutation_history=tuple(),
+                            cycle_created=0,
+                            times_copied=0,
+                            gap_bases=get_gaps(loaded_molecules[DNA_id]))
+            for DNA_id in loaded_molecules.keys()
+        }
 
         self.stats_by_cycle = defaultdict(lambda: {'total_molecules': 0,
-                                                   'recombined_molecules': 0,
-                                                   'unique_compositions': 0})
+                                                   'recombined_molecules': 0})
 
         self.donor_table = dict()
 
@@ -82,19 +90,28 @@ class PCRSimulator:
                                 aln_len: int,
                                 root_seed: int) -> dict[str, DNAMolecule]:
 
-        worker_id = cycle_num * 10000 + chunkdata[0]
+        """
+        Simulate a single PCR cycle on a chunk of molecules.
+
+        Returns a dictionary of molecules that represent the PCR product.
+        """
+
+        worker_id = cycle_num * 10000 + chunkdata[0]  # Assign each worker a unique ID for rng purposes
         worker_seed = int(worker_id) + int(root_seed)
         chunk = chunkdata[1]
-        # rng = np.random.default_rng([worker_id, root_seed])
+
         rng = np.random.RandomState(worker_seed)
 
         new_molecules = dict()
+
+        # Pre-populate random variables for efficiency
         muts_lookup = rng.binomial(n=aln_len, p=error_rate, size=len(chunk))
         probs = rng.random(size=(len(chunk), 2))
-        # muts_lookup = np.random.binomial(n=aln_len, p=error_rate, size=len(chunk))
-        # probs = np.random.random(size=(len(chunk), 2))
 
         for mid, molecule in enumerate(chunk):
+            # mid: Molecule ID / index
+            # Molecule: DNAMolecule object of molecule
+
             kept_molecule = DNAMolecule(parent_id=molecule.parent_id,
                                         molecule_id=f'{molecule.molecule_id}0',
                                         mutation_history=molecule.mutation_history,
@@ -102,10 +119,11 @@ class PCRSimulator:
                                         times_copied=molecule.times_copied,
                                         gap_bases=molecule.gap_bases)
 
+            # Retrieve copy and recombination samples for molecule
             pcopy, precomb = probs[mid, :]
-            # if cycle_num < 5:
-            #     print(pcopy, precomb)
+
             if pcopy < copying_probability:
+                # Make copy of template
                 new_history = list(kept_molecule.mutation_history)
 
                 # First simulate recombination events, to get the template bases used
@@ -115,7 +133,7 @@ class PCRSimulator:
                         did = rng.choice(available_donor_ids)
                         if did != molecule.molecule_id:
                             donor_id = did
-                    # recomb_bp = np.random.randint(1, aln_len)
+
                     recomb_bp = rng.randint(1, aln_len)
                     new_history.append(RecombinationEvent(position=recomb_bp,
                                                           donor_id=donor_id,
@@ -124,14 +142,16 @@ class PCRSimulator:
                 # Simulate mutations on top of the utilized template bases
                 muts = muts_lookup[mid]
                 if muts:
-                    pos = rng.choice(aln_len, replace=False, size=muts)
+                    pos = rng.choice(aln_len, replace=False, size=muts)  # Positions of polymerase errors
                     for i in range(muts):
                         if pos[i].item() in molecule.gap_bases:
-                            continue
-                        mut_ind = rng.randint(low=1, high=4)
+                            continue  # If mutation in gap, we can ignore it
+                        mut_ind = rng.randint(low=1, high=4)  # Uniform random mutations
                         new_history.append(MutationEvent(position=pos[i].item(), mut_ind=mut_ind, cycle=cycle_num))
                 new_molecules[kept_molecule.molecule_id] = kept_molecule
                 copied_mol_id = f'{molecule.molecule_id}1'
+
+                # Save new molecule object
                 new_molecules[copied_mol_id] = DNAMolecule(parent_id=molecule.parent_id,
                                                            molecule_id=copied_mol_id,
                                                            mutation_history=tuple(new_history),
@@ -149,15 +169,24 @@ class PCRSimulator:
         aln_len = next(iter(sequence_lengths.values()))
 
         for cycle_num in range(1, self.num_cycles + 1):
+
             working_pool = list(self.current_pool.values())
+
+            # Down-sample PCR pool if needed
             if len(working_pool) > self.max_molecules_per_cycle:
                 working_pool = np.random.choice(working_pool, size=self.max_molecules_per_cycle, replace=False)
+
+            # Make chunks of molecules to simulate cycle in parallel
             chunk_generator = chunkify(working_pool, self.chunk_size)
+
+            # List of molecule IDs to serve as putative recombinant partners
             available_donor_ids = [mol.molecule_id for mol in working_pool]
 
             num_chunks = int(np.ceil(len(working_pool) / self.chunk_size))
             new_pool = dict()
             num_processes = min(self.max_threads, max(1, len(working_pool) // self.chunk_size))
+
+            # Progress bar that launches parallel jobs
             with tqdm(total=num_chunks, leave=False, disable=True if num_chunks < 2 else False, miniters=1,
                       unit=' chunks', bar_format=f'        PCR cycle {cycle_num}' + '{l_bar}{bar:10}{r_bar}') as pbar:
                 with ProcessPoolExecutor(max_workers=num_processes) as executor:
@@ -170,11 +199,13 @@ class PCRSimulator:
                                            copying_probability=self.copying_probability,
                                            root_seed=self.seed)
 
+                    # Simulate PCR in chunks
                     chunk_results = executor.map(process_func, chunk_generator)
                     for result in chunk_results:
                         pbar.update()
-                        new_pool.update(result)
+                        new_pool.update(result)  # Save new molecules returned by each chunk
 
+            # After cycle, track which donors were involved in recombination to track separately
             donors = [e.donor_id for mol in new_pool.values() for e in mol.mutation_history if
                       type(e) is RecombinationEvent]
             self.donor_table.update(
@@ -198,11 +229,16 @@ class PCRSimulator:
                      f' ({recombined / len(self.current_pool) * 100:1.4f}%)')
 
     def reconstruct_sequence(self, molecule: DNAMolecule):
+        """
+        Reconstruct the nucleotide sequence from a DNA molecule using its mutation history.
+        """
         if not molecule.mutation_history:
             return self.initial_cdnas[molecule.parent_id]
 
         sequence = self.initial_cdnas[molecule.parent_id]
         for event in molecule.mutation_history:
+
+            # Handle recombination event
             if type(event) is RecombinationEvent:
                 bp = event.position
                 donor = event.donor_id
@@ -210,13 +246,19 @@ class PCRSimulator:
                     sequence = self.initial_cdnas[donor][:bp] + sequence[bp:]
                 else:
                     sequence = self.reconstruct_sequence(self.donor_table[donor])[:bp] + sequence[bp:]
+
+            # Handle mutations
             if type(event) is MutationEvent:
                 bp = event.position
                 mut = event.mut_ind
                 sequence = sequence[:bp] + apply_mut(sequence[bp], mut) + sequence[bp + 1:]
+
         return sequence
 
     def sample(self, nseqs):
+        """
+        Sample a number of molecules from the PCR product. Returns PCRDNASet.
+        """
 
         nseqs = int(nseqs)
         try:
@@ -246,6 +288,7 @@ ind2nuc = {ind: base for base, ind in nuc2ind.items()}
 
 
 def apply_mut(base, mut_ind):
+    """Apply a sampled mutation to a nucleotide."""
     if base == '-':
         return '-'
     bi = nuc2ind[base]

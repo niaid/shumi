@@ -1,3 +1,8 @@
+#  Copyright (c) 2025 National Institutes of Health
+#  Written by Pierce Radecki
+#  This program comes with ABSOLUTELY NO WARRANTY; it is intended for
+#  Research Use Only and not for use in diagnostic procedures.
+
 import logging
 import os
 import random
@@ -32,6 +37,7 @@ def main(test_command=None):
         seed(rng)
         np.random.seed(rng)
 
+    # Make output directory
     os.makedirs(args.output, exist_ok=True)
 
     # Configure logger
@@ -40,16 +46,18 @@ def main(test_command=None):
                         datefmt='%Y-%m-%d %H:%M:%S',
                         level=logging.DEBUG)
 
-    # Split logging to file (DEBUG) and stdout (INFO)
-    logger = logging.getLogger(__name__)
-    logging.getLogger('matplotlib').setLevel(logging.WARN)
-    # logger.setLevel(logging.DEBUG)
 
-    # Configure stdout messages
+    logger = logging.getLogger(__name__)
+
+    # Ignore logger outputs from matplotlib
+    logging.getLogger('matplotlib').setLevel(logging.WARN)
+
+    # Split logging to file (DEBUG) and stdout (INFO)
     console = logging.StreamHandler(sys.stdout)
     console.setLevel(logging.INFO)
     logger.addHandler(console)
 
+    # Print logger preamble
     logger.info(graphlib.logo)
     logger.info(f'shumi version {version.__version__}')
     logger.info(f'Args: {arglib.print_selected_args(args, args.__dict__.keys())}')
@@ -59,6 +67,7 @@ def main(test_command=None):
 
     run_name = args.name
 
+    # Initialize RNASet of RNA templates
     logger.info('Initializing RNASet...')
     rna_set = RNASet(f'{run_name}_rna')
 
@@ -82,6 +91,7 @@ def main(test_command=None):
     logger.info('\tdone')
     logger.info(rna_set.summarize())
 
+    # Initialize first copy cDNA, simulate RT reaction
     logger.info('Initializing FirstCopyCDNASet...')
     fccdna_set = FirstCopyCDNASet(name=f'{run_name}_cdna', rnaset=rna_set)
     fccdna_set.reverse_transcription(n=args.ncdna, fp=args.fp, rtp=args.rtp, fp_umi=args.umis,
@@ -90,6 +100,7 @@ def main(test_command=None):
     logger.info('\tdone')
     logger.info(fccdna_set.summarize())
 
+    # Simulate second strand synthesis if specified
     if args.sss:
         logger.info(f'Initializing SecondStrandSet...')
         ss_set = SecondStrandSet(name=f'{run_name}_ssdna', fccdnaset=fccdna_set)
@@ -102,8 +113,8 @@ def main(test_command=None):
     else:
         pcr_input = fccdna_set
 
+    # Simulate PCR reaction
     logger.info('Simulating PCR reaction...')
-
     pcr_simulator = PCRSimulator(cycles=args.cycles,
                                  efficiency=args.pcr_efficiency,
                                  error_rate=args.error_rate_pcr,
@@ -123,8 +134,10 @@ def main(test_command=None):
     pcrdna_set.write_sequences(os.path.join(args.output, f'{args.name}-pcrdna.fasta'))
     logger.info('\tdone')
 
+    # Print output summary from PCR reaction
     graphlib.pcr_summary_graph(pcr_simulator, os.path.join(args.output, f'{args.name}-pcr-summary.png'))
 
+    # Simulate sequencing via ReadSimulator
     logger.info('Simulating sequencing of PCR product...')
     read_simulator = ReadSimulator(reads=args.reads,
                                    pcrdna_set=pcrdna_set,
@@ -159,6 +172,7 @@ def main(test_command=None):
     else:
         sampled_ccs = None
 
+    # Generate final graphs from PCR & sequencing outputs
     graphlib.summary_graph(pcr_counts, sampled, sampled_ccs,
                            fp_out=os.path.join(args.output, f'{args.name}-samples.png'))
     logger.info('\tdone')

@@ -1,3 +1,8 @@
+#  Copyright (c) 2025 National Institutes of Health
+#  Written by Pierce Radecki
+#  This program comes with ABSOLUTELY NO WARRANTY; it is intended for
+#  Research Use Only and not for use in diagnostic procedures.
+
 import logging
 import random
 import sys
@@ -16,6 +21,10 @@ logger.addHandler(console)
 
 
 class MoleculeSet:
+    """
+    Base class for storing a collection of molecules with their sequences,
+    as well as some other useful properties such as the consensus and entropy.
+    """
 
     def __init__(self, name):
         self.name = name
@@ -132,7 +141,6 @@ class RNASet(MoleculeSet):
         msg = 'Summarizing RNASet:\n'
         msg += f'\tNumber of unique sequences: {len(self.sequences)}\n'
         msg += f'\tPopulation entropy: {self.get_entropy()}'
-        # msg += f'Total mutation rate: {self.mu}\n'
         return msg
 
 
@@ -189,7 +197,6 @@ class FirstCopyCDNASet(MoleculeSet):
         for i, seq in enumerate(self.sampled_rna_sequences):
 
             recombinant = False
-            # if binom.rvs(n=1, p=1 - binom.pmf(0, n=len(seq.seq), p=p_recomb)):
             if binom.rvs(n=1, p=p_recomb):
 
                 recombinant = True
@@ -246,7 +253,6 @@ class FirstCopyCDNASet(MoleculeSet):
         msg += f'\tSampled RNA population entropy: {self.get_entropy(self.rna_haplotype_counts)}\n'
         msg += f'\tNumber of unique first-copy cDNA sequences: {len(self.unique_cdna)}\n'
         msg += f'\tFirst-copy cDNA population entropy: {self.get_entropy()}'
-        # msg += f'Total mutation rate: {self.mu}\n'
         return msg
 
 
@@ -299,7 +305,6 @@ class SecondStrandSet(MoleculeSet):
 
             fprimer, umi = seqlib.sample_primer(fp, umis)
 
-            # if binom.rvs(n=1, p=1 - binom.pmf(0, n=len(seq.core), p=p_recomb)):
             if binom.rvs(n=1, p=p_recomb):
                 recombinant = True
                 recom_pair = random.choice(self.fccdnaset.sequences)

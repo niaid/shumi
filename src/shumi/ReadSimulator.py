@@ -1,3 +1,8 @@
+#  Copyright (c) 2025 National Institutes of Health
+#  Written by Pierce Radecki
+#  This program comes with ABSOLUTELY NO WARRANTY; it is intended for
+#  Research Use Only and not for use in diagnostic procedures.
+
 import functools
 import logging
 import multiprocessing
@@ -17,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 # noinspection PyProtectedMember
 def clipped_nb(p):
+    """
+    Computes PMF for a clipped negative binomial distribution with support [3, 60].
+    """
+
     pmf = np.array([nbinom._pmf(i, 2, p) for i in range(61)])
     pmf[0] = 0.0
     pmf[1] = 0.0

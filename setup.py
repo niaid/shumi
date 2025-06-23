@@ -21,5 +21,12 @@ setup(
             'shumi = shumi.cli:main'
         ]
     },
-    install_requires=[]
+    install_requires=['biopython',
+                      'matplotlib',
+                      'numpy',
+                      'pysam',
+                      'pyyaml',
+                      'tqdm',
+                      'scipy',
+                      'setuptools', ]
 )

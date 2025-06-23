@@ -1,10 +1,10 @@
-<h1 align="center">SHUMI</h1>
+<h1 align="center">shUMI</h1>
 
-_SHUMI_ – <b>S</b>imulating <b>H</b>igh-throughput <b>UMI</b>-based single-genome amplification and sequencing data.
+_shUMI_ – <b>S</b>imulating <b>H</b>igh-throughput <b>UMI</b>-based single-genome amplification and sequencing data.
 
 ![image SHUMI](./shumi.png)
 
-SHUMI generates sequencing data (raw PacBio CCS) from simulated high-throughput single-genome amplification and sequencing (HT-SGS) experiments. It allows for simulated experiments on arbitrary virus populations and detailed control of sample and library preparation variables, including cDNA copies loaded into PCR, reverse transcription (RT) and PCR error rates, PCR cycle count, RT and PCR recombination rates, sequencing movie time, and number of acquired sequencing reads.
+shUMI generates sequencing data (raw PacBio CCS) from simulated high-throughput single-genome amplification and sequencing (HT-SGS) experiments. It allows for simulated experiments on arbitrary virus populations and detailed control of sample and library preparation variables, including cDNA copies loaded into PCR, reverse transcription (RT) and PCR error rates, PCR cycle count, RT and PCR recombination rates, sequencing movie time, and number of acquired sequencing reads.
 
 # Requirements
 
@@ -53,8 +53,13 @@ Importantly, in all cases, the "population" being described is a collection of _
 - Use `--reads [m]` to specify the number of final CCS reads.
 - Use `--cycles [k]` to specify the number of PCR cycles (default: 30).
 - Use `--pcr-efficiency [q]` to specify PCR efficiency. `q` is the probability that a molecule is copied during a given cycle.
-- Use `--error-rate-rt/--error-rate-pcr` to specify the per-base error rate when copying molecules during RT/PCR (defaults: 1 x 10⁻⁴ for RT, 2.5 x 10⁻⁵ for PCR).
+- Use `--error-rate-rt/--error-rate-pcr` to specify the per-base error rate when copying molecules during RT/PCR (defaults: 1 x 10⁻⁴ for RT, 2.6 x 10⁻⁵ for PCR).
 - Use `--recomb-rate-rt/--recomb-rate-pcr` to specify the per-copy recombination rate when copying molecules during RT/PCR (defaults: 0.0 for RT, 0.0001 for PCR).
+
+**Configuration files**:
+
+Command line arguments can be combined and provided a configuration file in YAML format via the `--config` flag. If an argument is included in both the configuration file and on the command line, command line arguments will override the contents of the configuration file. See [sars2spike_B_2R.yaml](config/sars2spike_B_2R.yaml) for an example configuration file.
+
 
 
 **Examples**:

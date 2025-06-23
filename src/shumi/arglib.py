@@ -1,3 +1,8 @@
+#  Copyright (c) 2025 National Institutes of Health
+#  Written by Pierce Radecki
+#  This program comes with ABSOLUTELY NO WARRANTY; it is intended for
+#  Research Use Only and not for use in diagnostic procedures.
+
 import argparse
 import datetime
 import random
@@ -9,7 +14,8 @@ from . import version
 def parse_args(args):
     parser = argparse.ArgumentParser(description="A command line tool to simulate HT-SGS data.",
                                      usage="%(prog)s [--input-seq path | --input-pop path | --random L] "
-                                           "<--ncdna n> <--rtp ACGTN...> <--reads m> [-h] [options]")
+                                           "<--ncdna n> <--rtp ACGTN...> <--reads m> [-h] [options]\n\n"
+                                           "** indicates required arguments.")
 
     misc_parser = parser.add_argument_group("Miscellaneous Options")
     misc_parser.add_argument("--config", metavar='path', default=None, type=str, required=False,
@@ -44,7 +50,7 @@ def parse_args(args):
     cdna_parser.add_argument("--rtp", metavar='[ACGTN...]', type=str, default=None, required=False,
                              help="** RT primer sequence. Runs of N will replaced at random.")
     cdna_parser.add_argument("--fp", metavar='[ACGT...]', type=str, default=None,
-                             help="Optional sequence to append to 5' end of template sequence during RT")
+                             help="Optional sequence to append to 5' end of template sequence after RT")
     cdna_parser.add_argument("--umis", metavar='path', type=str, default=None,
                              help="File of reference UMIs to use when generating cDNA")
     cdna_parser.add_argument("--error-rate-rt", metavar='p', type=float, default=1e-4,
@@ -72,11 +78,11 @@ def parse_args(args):
                             help="Efficiency of PCR simulation; i.e., probability a molcule is copied during a cycle "
                                  "(default: 0.95)")
     pcr_parser.add_argument("--error-rate-pcr", metavar='r', type=float, default=2.6e-5,
-                            help="Uniform per-base error rate for PCR copies (default: 2.5e-5)")
+                            help="Uniform per-base error rate for PCR copies (default: 2.6e-5)")
     pcr_parser.add_argument("--recomb-rate-pcr", metavar='s', type=float, default=0.0001,
                             help="Probability of recombination when copying a molecule during PCR (default: 0.0001)")
-    pcr_parser.add_argument("--max-molecules-tracked", metavar='b', type=int, default=1000000,
-                            help="Maximum number of molecules to track during PCR cycles (default: 1000000)")
+    pcr_parser.add_argument("--max-molecules-tracked", metavar='b', type=int, default=1_000_000,
+                            help="Maximum number of molecules to track during PCR cycles (default: 1,000,000)")
 
     pbseq_parser = parser.add_argument_group("Sequencing Options")
     pbseq_parser.add_argument("--reads", metavar='m', type=int, default=None, required=False,
@@ -110,9 +116,8 @@ def parse_args(args):
 
 
 def validate_args(args):
-
-    # This branch is here to allow for input-seq to be overridden as "None" if it's provided in a configuration
-    # file but the user desires to provide a input-pop file.
+    # This branch is here to allow for --input-seq to be overridden as "None" if it's provided in a configuration
+    # file but the user desires to override using a input-pop file on the command line.
     if args.input_seq in ("None", "none", ""):
         args.input_seq = None
 
@@ -219,6 +224,7 @@ def validate_args(args):
 
 
 def infer_defaults(args):
+    # Specify run name using provided inputs, appending time stamp
     if args.name is None:
         if args.input_seq:
             args.name = Path(args.input_seq).stem
@@ -228,6 +234,7 @@ def infer_defaults(args):
             args.name = 'umisim'
         args.name = datetime.datetime.now().strftime(f'{args.name}-%y%m%d-%H%M%S')
 
+    # Give unique hex ID to runs
     hex_id = "{:03x}".format(random.randint(0, 0xFFF)) + "{:01x}".format(random.randint(0xA, 0xF))
     args.hex_id = hex_id
 
@@ -253,6 +260,3 @@ def print_selected_args(args, selected_args):
         parg = selected_arg.replace('_', '-')
         msg += f'\n\t--{parg}={args.__dict__[selected_arg]}'
     return msg
-
-# if __name__ == '__main__':
-#     multiprocessing.freeze_support()

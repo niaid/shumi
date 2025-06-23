@@ -1,3 +1,8 @@
+#  Copyright (c) 2025 National Institutes of Health
+#  Written by Pierce Radecki
+#  This program comes with ABSOLUTELY NO WARRANTY; it is intended for
+#  Research Use Only and not for use in diagnostic procedures.
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,7 +41,7 @@ def summary_graph(counts, samples, samples_ccs, fp_out):
         plt.scatter([counts[0]], [len(counts)], marker='o', s=30, alpha=1, color='tomato')
     else:
         plt.hist(counts, rwidth=2, color='tomato')
-    plt.xlabel('Number of PCR cDNA generated from bin')
+    plt.xlabel('Number of PCR DNA molecules generated from bin')
     plt.gca().set_xlim(left=0)
     plt.gca().set_ylim(bottom=0)
     plt.ylabel('Counts')
@@ -44,13 +49,13 @@ def summary_graph(counts, samples, samples_ccs, fp_out):
     plt.subplot(332)
     plt.scatter(counts, samples, marker='o', s=30, alpha=0.5, color='cadetblue')
     plt.plot([0, max(counts)], [0, max(props) * sum(samples)], ls='--', color='k')
-    plt.xlabel('Number of PCR cDNA generated from bin')
+    plt.xlabel('Number of PCR DNA molecules generated from bin')
     plt.gca().set_xlim(left=0)
-    plt.ylabel('Number of PCR cDNA sampled from bin')
+    plt.ylabel('Number of PCR DNA molecules sampled from bin')
 
     plt.subplot(335)
     plt.hist(samples, bins=50, color='mediumorchid')
-    plt.xlabel('Number of PCR cDNA sampled from bin')
+    plt.xlabel('Number of PCR DNA molecules sampled from bin')
     plt.gca().set_xlim(left=0)
     plt.ylabel('Counts')
 
@@ -59,14 +64,14 @@ def summary_graph(counts, samples, samples_ccs, fp_out):
         plt.subplot(333)
         plt.scatter(counts, samples_ccs, marker='o', s=30, alpha=0.5, color='cadetblue')
         plt.plot([0, max(counts)], [0, max(props) * sum(samples_ccs)], ls='--', color='k')
-        plt.xlabel('Number of PCR cDNA generated from bin')
+        plt.xlabel('Number of PCR DNA molecules generated from bin')
         plt.gca().set_xlim(left=0)
         plt.ylabel('Number of CCS obtained from bin')
 
         plt.subplot(336)
         plt.scatter(samples, samples_ccs, marker='o', s=30, alpha=0.5, color='cadetblue')
         plt.plot([0, max(samples)], [0, max(props_sampled) * sum(samples_ccs)], ls='--', color='k')
-        plt.xlabel('Number of PCR cDNA sampled from bin')
+        plt.xlabel('Number of PCR DNA molecules sampled from bin')
         plt.gca().set_xlim(left=0)
         plt.ylabel('Number of CCS obtained from bin')
 
